@@ -1,0 +1,117 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "VPC with Public and Private Subnet and EC2 instances",
+ 
+  "Resources": {
+ 
+    "devVPC1": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "Tags": [{"Key": "Name", "Value": "devVPC1"}]
+      }
+    },
+
+    "InternetGateway1": {
+      "Type": "AWS::EC2::InternetGateway"
+    },
+ 
+    "AttachGateway1": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {"Ref": "devVPC1"},
+        "InternetGatewayId": {"Ref": "InternetGateway1"}
+      }
+    },
+ 
+    "pubSubnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {"Ref": "devVPC1"},
+        "CidrBlock": "10.0.1.0/24",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [{"Key": "Name", "Value": "pubSubnet"}]
+      }
+    },
+ 
+    "pvtSubnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {"Ref": "devVPC1"},
+        "CidrBlock": "10.0.2.0/24",
+        "Tags": [{"Key": "Name", "Value": "pvtSubnet"}]
+      }
+    },
+ 
+    "RouteTable1": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {"Ref": "devVPC1"}
+      }
+    },
+ 
+    "Route1": {
+      "Type": "AWS::EC2::Route",
+      "DependsOn": "AttachGateway",
+      "Properties": {
+        "RouteTableId": {"Ref": "RouteTable1"},
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {"Ref": "InternetGateway1"}
+      }
+    },
+ 
+    "SubnetRouteTableAssociation1": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {"Ref": "pubSubnet1"},
+        "RouteTableId": {"Ref": "RouteTable1"}
+      }
+    },
+ 
+    "WebSecurityGroup1": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {"Ref": "devVPC1"},
+        "GroupDescription": "Allow HTTP and SSH",
+        "SecurityGroupIngress": [
+          {"IpProtocol": "tcp", "FromPort": 22, "ToPort": 22, "CidrIp": "0.0.0.0/0"},
+          {"IpProtocol": "tcp", "FromPort": 80, "ToPort": 80, "CidrIp": "0.0.0.0/0"}
+        ]
+      }
+    },
+ 
+    "DBSecurityGroup1": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {"Ref": "devVPC1"},
+        "GroupDescription": "Allow MySQL from VPC",
+        "SecurityGroupIngress": [
+          {"IpProtocol": "tcp", "FromPort": 3306, "ToPort": 3306, "CidrIp": "10.0.0.0/16"}
+        ]
+      }
+    },
+ 
+    "WebServer1": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": "ami-0c55b159cbfafe1f0",
+        "InstanceType": "t3.micro",
+        "SubnetId": {"Ref": "pubSubnet1"},
+        "SecurityGroupIds": [{"Ref": "WebSecurityGroup1"}],
+        "Tags": [{"Key": "Name", "Value": "webserver"}]
+      }
+    },
+ 
+    "DBServer1": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": "ami-09256c524fab91d36",
+        "InstanceType": "t3.micro",
+        "SubnetId": {"Ref": "pvtSubnet1"},
+        "SecurityGroupIds": [{"Ref": "DBSecurityGroup1"}],
+        "Tags": [{"Key": "Name", "Value": "dbserver"}]
+      }
+    }
+  }
+}
+ 

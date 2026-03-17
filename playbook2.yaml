@@ -1,0 +1,24 @@
+- hosts: web
+  tasks: 
+  - copy:
+      src: /etc/passwd
+      dest: /root/
+
+  - file:
+      path: /root/ansible
+      state: directory
+  - file:
+      path: /root/ansible/file.txt
+      state: touch
+  - yum:
+      name: tree
+      state: present
+  - user:
+    name: "{{ item }}"
+    state: present
+    with_items:
+    - rajesh
+    - david
+    - richa
+    - monica
+  
